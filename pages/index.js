@@ -41,6 +41,11 @@ export default function Home() {
 
     // Create white noise for static effect
     function createWhiteNoise() {
+      // Resume audio context on user interaction (needed for autoplay policies)
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -67,6 +72,11 @@ export default function Home() {
 
     // Play static sound
     function playStatic(duration = 1000) {
+      // Ensure audio context is running
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       if (!audioContext || !gainNode) return;
       
       // Set gain to simulate static
@@ -83,6 +93,11 @@ export default function Home() {
 
     // Simulate signal interference
     function simulateInterference() {
+      // Ensure audio context is running
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       if (!audioContext || !gainNode) return;
       
       // Random interference bursts
@@ -101,6 +116,11 @@ export default function Home() {
 
     // Simulate signal fading
     function simulateFading(utterance) {
+      // Ensure audio context is running
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
       if (!audioContext || !gainNode) return;
       
       // Random fading effect during speech
@@ -381,6 +401,17 @@ export default function Home() {
         }
       }
     });
+    
+    // Initialize audio context on first user interaction
+    document.addEventListener('click', function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      document.removeEventListener('click', initAudio);
+    }, { once: true });
   }, []);
 
   return (
