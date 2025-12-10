@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Script from 'next/script';
 
 export default function Home() {
   return (
@@ -87,7 +88,7 @@ export default function Home() {
         </div>
       </div>
       
-      <script src="/app.js" defer></script>
+      <Script src="/app.js" strategy="afterInteractive" />
     </>
   );
 }
