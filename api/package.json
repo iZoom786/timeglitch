@@ -1,0 +1,11 @@
+{
+  "name": "timeglitch-api",
+  "version": "1.0.0",
+  "description": "API for Time Glitch Radio",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}
