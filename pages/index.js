@@ -26,12 +26,17 @@ export default function Home() {
 
     // Fetch recent news (last week) - Updated for Vercel API routes
     async function fetchRecentNews() {
-      const res = await fetch("/api/news");
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      try {
+        const res = await fetch("/api/news");
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${res.statusText} - ${errorText}`);
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Fetch error:", error);
+        throw error;
       }
-      return await res.json();
     }
 
     // Create white noise for static effect
