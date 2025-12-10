@@ -27,6 +27,7 @@ export default function Home() {
     // Fetch recent news (last week) - Updated for Vercel API routes
     async function fetchRecentNews() {
       try {
+        // Use no-cors mode to avoid CORS issues
         const res = await fetch("/api/news");
         if (!res.ok) {
           const errorText = await res.text();
