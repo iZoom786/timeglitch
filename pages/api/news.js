@@ -5,15 +5,18 @@ import path from "path";
 const envPath = path.join(process.cwd(), ".env.local");
 require("dotenv").config({ path: envPath });
 
-let fetchFn = global.fetch;
-try { 
-  if (!fetchFn) {
-    // Dynamically import node-fetch for server-side
-    fetchFn = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-  }
-} catch (_) {}
-
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
   try {
     // For NewsAPI free tier, we'll only fetch articles from the last week
     const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
@@ -32,12 +35,16 @@ export default async function handler(req, res) {
     // Fetch news from NewsAPI for the last week
     const url = `https://newsapi.org/v2/everything?q=usa&from=${fromDate}&to=${toDate}&sortBy=popularity&apiKey=${NEWS_API_KEY}&pageSize=20`;
     
-    // Use dynamic import for node-fetch if needed
-    const fetch = typeof fetchFn === 'function' && fetchFn.constructor.name === 'AsyncFunction' 
-      ? await fetchFn() 
-      : fetchFn;
-      
-    const apiResponse = await fetch(url);
+    // Use native fetch if available, otherwise import node-fetch
+    let fetchImpl;
+    if (typeof fetch !== 'undefined') {
+      fetchImpl = fetch;
+    } else {
+      const nodeFetch = await import('node-fetch');
+      fetchImpl = nodeFetch.default;
+    }
+    
+    const apiResponse = await fetchImpl(url);
     
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
