@@ -18,10 +18,9 @@ function setStatus(msg) {
   statusEl.textContent = msg || "";
 }
 
-// Fetch recent news (last week)
+// Fetch recent news (last week) - Updated for Vercel API routes
 async function fetchRecentNews() {
-  const url = new URL("/api/news", window.location.origin);
-  const res = await fetch(url.toString());
+  const res = await fetch("/api/news");
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
