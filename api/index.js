@@ -1,6 +1,5 @@
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
 require("dotenv").config({ path: path.join(__dirname, "../.env.local") });
 
 let fetchFn = global.fetch;
@@ -11,7 +10,6 @@ const express = require("express");
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 8000;
 const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
 
 // Serve static files
@@ -48,5 +46,17 @@ app.get("/api/news", async (req, res) => {
 
 // Export the Express app as a Vercel serverless function
 module.exports = (req, res) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).end();
+    return;
+  }
+  
+  // Set CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
   return app(req, res);
 };
