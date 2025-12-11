@@ -8,3 +8,4 @@ See more info here: https://nextjs.org/docs/messages/no-stylesheets-in-head-comp
 [00:02:41.273] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
 [00:02:54.664] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
 [00:03:15.555] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
+[00:03:56.304] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
