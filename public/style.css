@@ -118,6 +118,15 @@ p {
   font-size: 14px;
 }
 
+/* Add year labels for the meter */
+.meter-labels span {
+  position: relative;
+  top: -30px;
+  font-size: 12px;
+  color: var(--retro-green);
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
 .tuning-indicator {
   position: absolute;
   top: 50%;

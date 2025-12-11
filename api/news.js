@@ -63,8 +63,14 @@ export default async function handler(req, res) {
         description: doc.snippet || "No description available",
         pub_date: doc.pub_date || new Date().toISOString(),
         url: doc.web_url || "",
-        // Include the full article content from the "main" section
-        content: doc.lead_paragraph || doc.abstract || doc.snippet || ""
+        // Include as much article content as possible
+        content: [
+          doc.lead_paragraph,
+          doc.abstract,
+          doc.snippet,
+          doc.headline ? doc.headline.main : "",
+          doc.byline ? doc.byline.original : ""
+        ].filter(Boolean).join(". ") || "No content available"
       }));
     }
     
