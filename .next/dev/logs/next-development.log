@@ -1,8 +1,10 @@
-[00:00:01.107] Server  LOG      ✓ Ready in 690ms
-[00:00:14.105] Server  WARN    Do not add stylesheets using next/head (see <link rel="stylesheet"> tag with href="/style.css"). Use Document instead. 
+[00:00:01.085] Server  LOG      ✓ Ready in 681ms
+[00:00:15.762] Server  WARN    Do not add stylesheets using next/head (see <link rel="stylesheet"> tag with href="/style.css"). Use Document instead. 
 See more info here: https://nextjs.org/docs/messages/no-stylesheets-in-head-component
-[00:00:27.810] Browser WARN    Do not add stylesheets using next/head (see <link rel="stylesheet"> tag with href="/style.css"). Use Document instead. 
+[00:02:09.809] Browser WARN    Do not add stylesheets using next/head (see <link rel="stylesheet"> tag with href="/style.css"). Use Document instead. 
 See more info here: https://nextjs.org/docs/messages/no-stylesheets-in-head-component
-[00:00:30.179] Server  LOG     [dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
-[00:00:33.026] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
-[00:01:00.119] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
+[00:02:10.761] Server  LOG     [dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+[00:02:14.473] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
+[00:02:41.273] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
+[00:02:54.664] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
+[00:03:15.555] Server  WARN    API response for /api/news exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit

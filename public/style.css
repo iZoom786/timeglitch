@@ -128,39 +128,15 @@ p {
 }
 
 .tuning-indicator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100px;
-  height: 100px;
-  border: 2px solid var(--retro-green);
-  border-radius: 50%;
   display: none;
 }
 
 .tuning-indicator::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 60px;
-  height: 60px;
-  border: 2px solid var(--retro-green);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .tuning-indicator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  background: var(--retro-green);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .transmission-found {
@@ -330,4 +306,14 @@ p {
   .radio-interface {
     padding: 16px;
   }
+}
+
+/* Copyright footer styling */
+.copyright {
+  margin-top: 32px;
+  padding: 16px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  border-top: 1px solid var(--border);
 }
