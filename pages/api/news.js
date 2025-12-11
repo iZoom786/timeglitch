@@ -18,22 +18,19 @@ export default async function handler(req, res) {
   }
   
   try {
-    // For NewsAPI free tier, we'll only fetch articles from the last week
-    const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
+    // Use New York Times Archive API key
+    const NY_TIMES_API_KEY = process.env.NY_TIMES_API_KEY || "";
     
-    if (!NEWS_API_KEY) {
-      return res.status(500).json({ error: "News API key not configured" });
+    if (!NY_TIMES_API_KEY) {
+      return res.status(500).json({ error: "New York Times API key not configured" });
     }
     
-    // Calculate date range for last week
-    const today = new Date();
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // Generate a random date within the specified range (1895 to 1999)
+    const randomYear = 1895 + Math.floor(Math.random() * (1999 - 1895 + 1));
+    const randomMonth = Math.floor(Math.random() * 12) + 1;
     
-    const toDate = today.toISOString().split('T')[0];
-    const fromDate = oneWeekAgo.toISOString().split('T')[0];
-    
-    // Fetch news from NewsAPI for the last week
-    const url = `https://newsapi.org/v2/everything?q=usa&from=${fromDate}&to=${toDate}&sortBy=popularity&apiKey=${NEWS_API_KEY}&pageSize=20`;
+    // Fetch news from New York Times Archive API
+    const url = `https://api.nytimes.com/svc/archive/v1/${randomYear}/${randomMonth}.json?api-key=${NY_TIMES_API_KEY}`;
     
     // Use native fetch if available, otherwise import node-fetch
     let fetchImpl;
@@ -48,11 +45,30 @@ export default async function handler(req, res) {
     
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      return res.status(apiResponse.status).json({ error: `News API request failed: ${errorText}` });
+      return res.status(apiResponse.status).json({ error: `NYT Archive API request failed: ${errorText}` });
     }
     
     const data = await apiResponse.json();
-    return res.status(200).json(data);
+    
+    // Transform NYT data to match the expected format
+    const transformedData = {
+      status: "ok",
+      articles: []
+    };
+    
+    // Extract articles from NYT response
+    if (data.response && data.response.docs && Array.isArray(data.response.docs)) {
+      transformedData.articles = data.response.docs.map(doc => ({
+        title: doc.headline ? doc.headline.main : "Untitled Article",
+        description: doc.snippet || "No description available",
+        pub_date: doc.pub_date || new Date().toISOString(),
+        url: doc.web_url || "",
+        // Include the full article content from the "main" section
+        content: doc.lead_paragraph || doc.abstract || doc.snippet || ""
+      }));
+    }
+    
+    return res.status(200).json(transformedData);
   } catch (e) {
     console.error("API Error:", e);
     return res.status(500).json({ error: String(e.message || e) });

@@ -38,40 +38,62 @@ const envPath = __TURBOPACK__imported__module__$5b$externals$5d2f$path__$5b$exte
 __turbopack_context__.r("[externals]/dotenv [external] (dotenv, cjs)").config({
     path: envPath
 });
-let fetchFn = /*TURBOPACK member replacement*/ __turbopack_context__.g.fetch;
-try {
-    if (!fetchFn) {
-        // Dynamically import node-fetch for server-side
-        fetchFn = (...args)=>__turbopack_context__.A("[externals]/node-fetch [external] (node-fetch, esm_import, async loader)").then(({ default: fetch })=>fetch(...args));
-    }
-} catch (_) {}
 async function handler(req, res) {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
     try {
-        // For NewsAPI free tier, we'll only fetch articles from the last week
-        const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
-        if (!NEWS_API_KEY) {
+        // Use New York Times Archive API key
+        const NY_TIMES_API_KEY = process.env.NY_TIMES_API_KEY || "";
+        if (!NY_TIMES_API_KEY) {
             return res.status(500).json({
-                error: "News API key not configured"
+                error: "New York Times API key not configured"
             });
         }
-        // Calculate date range for last week
-        const today = new Date();
-        const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const toDate = today.toISOString().split('T')[0];
-        const fromDate = oneWeekAgo.toISOString().split('T')[0];
-        // Fetch news from NewsAPI for the last week
-        const url = `https://newsapi.org/v2/everything?q=usa&from=${fromDate}&to=${toDate}&sortBy=popularity&apiKey=${NEWS_API_KEY}&pageSize=20`;
-        // Use dynamic import for node-fetch if needed
-        const fetch = typeof fetchFn === 'function' && fetchFn.constructor.name === 'AsyncFunction' ? await fetchFn() : fetchFn;
-        const apiResponse = await fetch(url);
+        // Generate a random date within the specified range (1895 to 1999)
+        const randomYear = 1895 + Math.floor(Math.random() * (1999 - 1895 + 1));
+        const randomMonth = Math.floor(Math.random() * 12) + 1;
+        // Fetch news from New York Times Archive API
+        const url = `https://api.nytimes.com/svc/archive/v1/${randomYear}/${randomMonth}.json?api-key=${NY_TIMES_API_KEY}`;
+        // Use native fetch if available, otherwise import node-fetch
+        let fetchImpl;
+        if (typeof fetch !== 'undefined') {
+            fetchImpl = fetch;
+        } else {
+            const nodeFetch = await __turbopack_context__.A("[externals]/node-fetch [external] (node-fetch, esm_import, async loader)");
+            fetchImpl = nodeFetch.default;
+        }
+        const apiResponse = await fetchImpl(url);
         if (!apiResponse.ok) {
             const errorText = await apiResponse.text();
             return res.status(apiResponse.status).json({
-                error: `News API request failed: ${errorText}`
+                error: `NYT Archive API request failed: ${errorText}`
             });
         }
         const data = await apiResponse.json();
-        return res.status(200).json(data);
+        // Transform NYT data to match the expected format
+        const transformedData = {
+            status: "ok",
+            articles: []
+        };
+        // Extract articles from NYT response
+        if (data.response && data.response.docs && Array.isArray(data.response.docs)) {
+            transformedData.articles = data.response.docs.map((doc)=>({
+                    title: doc.headline ? doc.headline.main : "Untitled Article",
+                    description: doc.snippet || "No description available",
+                    pub_date: doc.pub_date || new Date().toISOString(),
+                    url: doc.web_url || "",
+                    // Include the full article content from the "main" section
+                    content: doc.lead_paragraph || doc.abstract || doc.snippet || ""
+                }));
+        }
+        return res.status(200).json(transformedData);
     } catch (e) {
         console.error("API Error:", e);
         return res.status(500).json({

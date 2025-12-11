@@ -28,27 +28,48 @@ app.use(express.static(__dirname));
 // New endpoint to fetch recent news (last week)
 app.get("/api/news", async (req, res) => {
   try {
-    // For NewsAPI free tier, we'll only fetch articles from the last week
-    if (!NEWS_API_KEY) return res.status(500).json({ error: "News API key not configured" });
+    // Use New York Times Archive API key
+    const NY_TIMES_API_KEY = process.env.NY_TIMES_API_KEY || "";
     
-    // Calculate date range for last week
-    const today = new Date();
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    if (!NY_TIMES_API_KEY) {
+      return res.status(500).json({ error: "New York Times API key not configured" });
+    }
     
-    const toDate = today.toISOString().split('T')[0];
-    const fromDate = oneWeekAgo.toISOString().split('T')[0];
+    // Generate a random date within the specified range (1895 to 1999)
+    const randomYear = 1895 + Math.floor(Math.random() * (1999 - 1895 + 1));
+    const randomMonth = Math.floor(Math.random() * 12) + 1;
     
-    // Fetch news from NewsAPI for the last week
-    const url = `https://newsapi.org/v2/everything?q=usa&from=${fromDate}&to=${toDate}&sortBy=popularity&apiKey=${NEWS_API_KEY}&pageSize=20`;
+    // Fetch news from New York Times Archive API
+    const url = `https://api.nytimes.com/svc/archive/v1/${randomYear}/${randomMonth}.json?api-key=${NY_TIMES_API_KEY}`;
+    
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
-      return res.status(response.status).json({ error: `News API request failed: ${errorText}` });
+      return res.status(response.status).json({ error: `NYT Archive API request failed: ${errorText}` });
     }
     
     const data = await response.json();
-    return res.json(data);
+    
+    // Transform NYT data to match the expected format
+    const transformedData = {
+      status: "ok",
+      articles: []
+    };
+    
+    // Extract articles from NYT response
+    if (data.response && data.response.docs && Array.isArray(data.response.docs)) {
+      transformedData.articles = data.response.docs.map(doc => ({
+        title: doc.headline ? doc.headline.main : "Untitled Article",
+        description: doc.snippet || "No description available",
+        pub_date: doc.pub_date || new Date().toISOString(),
+        url: doc.web_url || "",
+        // Include the full article content from the "main" section
+        content: doc.lead_paragraph || doc.abstract || doc.snippet || ""
+      }));
+    }
+    
+    return res.json(transformedData);
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
   }

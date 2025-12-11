@@ -73,7 +73,13 @@ function Home() {
             whiteNoiseNode.loop = true;
             gainNode = audioContext.createGain();
             gainNode.gain.value = 0;
-            whiteNoiseNode.connect(gainNode);
+            // Add a filter to simulate the limited frequency range of old radios (300-3000 Hz)
+            const filter = audioContext.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.frequency.value = 1650; // Center frequency
+            filter.Q.value = 0.3; // Controls bandwidth (lower Q = wider band)
+            whiteNoiseNode.connect(filter);
+            filter.connect(gainNode);
             gainNode.connect(audioContext.destination);
             whiteNoiseNode.start();
         }
@@ -84,12 +90,21 @@ function Home() {
                 audioContext.resume();
             }
             if (!audioContext || !gainNode) return;
-            // Set gain to simulate static
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            // Set gain to simulate static with old radio characteristics
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            // Add crackling effect for more authentic old radio sound
+            const crackleInterval = setInterval(()=>{
+                if (gainNode && Math.random() > 0.7) {
+                    const crackleIntensity = 0.2 + Math.random() * 0.3;
+                    gainNode.gain.setValueAtTime(crackleIntensity, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.15, audioContext.currentTime + 0.05);
+                }
+            }, 100);
             // Fade out static
             setTimeout(()=>{
+                clearInterval(crackleInterval);
                 if (gainNode) {
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
                 }
             }, duration - 500);
@@ -101,14 +116,20 @@ function Home() {
                 audioContext.resume();
             }
             if (!audioContext || !gainNode) return;
-            // Random interference bursts
+            // Random interference bursts with more authentic old radio characteristics
             const burstCount = Math.floor(Math.random() * 3) + 1;
             for(let i = 0; i < burstCount; i++){
                 setTimeout(()=>{
                     if (gainNode) {
-                        const intensity = Math.random() * 0.3;
+                        // More pronounced interference bursts
+                        const intensity = 0.1 + Math.random() * 0.4;
                         gainNode.gain.setValueAtTime(intensity, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                        // Add crackling sound effect
+                        setTimeout(()=>{
+                            if (gainNode) {
+                                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                            }
+                        }, 200);
                     }
                 }, i * 500);
             }
@@ -125,16 +146,19 @@ function Home() {
             for(let i = 0; i < fadePoints; i++){
                 setTimeout(()=>{
                     if (gainNode && Math.random() > 0.3) {
-                        // Brief signal loss
-                        gainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+                        // Brief signal loss with more pronounced effect
+                        gainNode.gain.setValueAtTime(0.005, audioContext.currentTime);
                         setTimeout(()=>{
-                            gainNode.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + 0.1);
+                            // Add some noise during the fade back in
+                            if (gainNode) {
+                                gainNode.gain.exponentialRampToValueAtTime(0.1, audioContext.currentTime + 0.1);
+                            }
                         }, 100);
                     }
                 }, i * (utterance.text.length / fadePoints) * 50);
             }
         }
-        // Convert text to speech using Web Speech API with random voice settings and distortion effects
+        // Convert text to speech using Web Speech API with old radio characteristics
         function speakText(text, onEndCallback) {
             if ('speechSynthesis' in window) {
                 // Cancel any ongoing speech
@@ -143,38 +167,31 @@ function Home() {
                 const utterance = new SpeechSynthesisUtterance(text);
                 // Get available voices
                 const voices = speechSynthesis.getVoices();
-                // Randomly select voice characteristics
-                const randomGender = Math.random() > 0.5 ? 'male' : 'female';
-                const randomRate = 0.8 + Math.random() * 0.6; // Between 0.8 and 1.4
-                const randomPitch = 0.8 + Math.random() * 0.6; // Between 0.8 and 1.4
-                const randomVolume = 0.7 + Math.random() * 0.3; // Between 0.7 and 1.0
-                // Try to find a voice that matches our random gender preference
+                // Try to find a voice that matches old radio announcer characteristics
                 let selectedVoice = null;
                 if (voices.length > 0) {
-                    // Filter voices by gender if possible
-                    const genderVoices = voices.filter((voice)=>{
-                        // This is a simple heuristic - not all browsers provide gender info
-                        if (randomGender === 'male') {
-                            return voice.name.toLowerCase().includes('male') || !voice.name.toLowerCase().includes('female');
-                        } else {
-                            return voice.name.toLowerCase().includes('female');
-                        }
-                    });
-                    // If we found gender-specific voices, use one of those
-                    if (genderVoices.length > 0) {
-                        selectedVoice = genderVoices[Math.floor(Math.random() * genderVoices.length)];
+                    // Look for voices that might approximate the old radio sound
+                    // Prefer male voices for that classic announcer feel
+                    const maleVoices = voices.filter((voice)=>voice.name.toLowerCase().includes('male') || voice.name.toLowerCase().includes('man') || !voice.name.toLowerCase().includes('female') && !voice.name.toLowerCase().includes('woman'));
+                    // If we found male voices, use one of those
+                    if (maleVoices.length > 0) {
+                        selectedVoice = maleVoices[Math.floor(Math.random() * maleVoices.length)];
                     } else {
                         // Otherwise, pick any voice
                         selectedVoice = voices[Math.floor(Math.random() * voices.length)];
                     }
                 }
-                // Apply voice settings
+                // Apply old radio announcer voice settings
                 if (selectedVoice) {
                     utterance.voice = selectedVoice;
                 }
-                utterance.rate = randomRate;
-                utterance.pitch = randomPitch;
-                utterance.volume = randomVolume;
+                // Old radio characteristics:
+                // Deep and resonant pitch (lower pitch)
+                utterance.pitch = 0.4; // Lower pitch for deeper, more resonant sound
+                // Measured pace and emphasis (slower speech)
+                utterance.rate = 0.7; // Slower, more deliberate pace
+                // Clear volume for authority
+                utterance.volume = 0.9; // Clear, strong volume
                 // Apply distortion effects during speech
                 utterance.onstart = ()=>{
                     // Play some initial static when speech begins
@@ -198,7 +215,7 @@ function Home() {
             }
         }
         // Simulate scanning for radio transmissions
-        function simulateScan(onComplete) {
+        function simulateScan(onComplete, targetYear) {
             // Reset UI
             transmissionFoundEl.style.display = "none";
             frequencyEl.textContent = "Searching frequencies...";
@@ -209,6 +226,12 @@ function Home() {
             // Play static during scanning
             if (gainNode) {
                 gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+            }
+            // Position needle based on target year (1895-1999) if available
+            if (targetYear) {
+                // Calculate position: 1895 = -60deg, 1999 = 60deg
+                const position = (targetYear - 1895) / (1999 - 1895) * 120 - 60;
+                needleEl.style.transform = `rotate(${position}deg)`;
             }
             // Simulate scanning animation
             let scanCount = 0;
@@ -267,7 +290,31 @@ function Home() {
             }, 300);
         }
         // Generate a random date in the past
-        function getRandomHistoricalDate() {
+        function getRandomHistoricalDate(pubDateStr) {
+            // If we have a publication date from the article, use it
+            if (pubDateStr) {
+                try {
+                    const pubDate = new Date(pubDateStr);
+                    // Format date
+                    const options = {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    };
+                    const formattedDate = pubDate.toLocaleDateString('en-US', options);
+                    // Generate random time
+                    const hours = Math.floor(Math.random() * 24);
+                    const minutes = Math.floor(Math.random() * 60);
+                    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} GMT`;
+                    return {
+                        date: formattedDate,
+                        time: formattedTime
+                    };
+                } catch (e) {
+                    console.error("Error parsing publication date:", e);
+                }
+            }
+            // Fallback to random date generation
             const start = new Date(1940, 0, 1);
             const end = new Date();
             const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -290,7 +337,8 @@ function Home() {
         // Play the current article
         function playArticle(article) {
             if (!article) return;
-            const textToSpeak = `${article.title}. ${article.description}`;
+            // Use full article content for text-to-speech if available, otherwise fall back to snippet/description
+            const textToSpeak = `${article.title}. ${article.content || article.snippet || article.description || ""}`;
             const success = speakText(textToSpeak, function() {
                 setStatus("Transmission ended");
                 isPlaying = false;
@@ -312,33 +360,49 @@ function Home() {
                 e.preventDefault();
                 try {
                     setStatus("Scanning for historical transmissions...");
-                    // Simulate scanning
-                    simulateScan(async ()=>{
-                        // Fetch recent news
-                        setStatus("Locking onto signal...");
-                        const newsData = await fetchRecentNews();
-                        if (newsData.status === "ok" && newsData.articles && newsData.articles.length > 0) {
-                            // Select a random article
-                            const randomIndex = Math.floor(Math.random() * newsData.articles.length);
-                            currentArticle = newsData.articles[randomIndex];
-                            // Generate random historical date
-                            const { date, time } = getRandomHistoricalDate();
+                    // Fetch recent news first to get the target year
+                    setStatus("Locking onto signal...");
+                    const newsData = await fetchRecentNews();
+                    if (newsData.status === "ok" && newsData.articles && newsData.articles.length > 0) {
+                        // Select a random article
+                        const randomIndex = Math.floor(Math.random() * newsData.articles.length);
+                        currentArticle = newsData.articles[randomIndex];
+                        // Extract year from publication date
+                        let targetYear = null;
+                        if (currentArticle.pub_date) {
+                            try {
+                                const pubDate = new Date(currentArticle.pub_date);
+                                targetYear = pubDate.getFullYear();
+                            } catch (e) {
+                                console.error("Error parsing publication date:", e);
+                            }
+                        }
+                        // Simulate scanning with target year
+                        simulateScan(async ()=>{
+                            // Generate historical date based on article's publication date
+                            const { date, time } = getRandomHistoricalDate(currentArticle.pub_date);
                             // Update UI
                             dateDisplayEl.textContent = date;
                             timeDisplayEl.textContent = time;
                             transmissionFoundEl.style.display = "block";
+                            // Position needle based on target year
+                            if (targetYear) {
+                                // Calculate position: 1895 = -60deg, 1999 = 60deg
+                                const position = (targetYear - 1895) / (1999 - 1895) * 120 - 60;
+                                needleEl.style.transform = `rotate(${position}deg)`;
+                            }
                             // Auto-play the article after a brief delay
                             setTimeout(()=>{
                                 playArticle(currentArticle);
                             }, 1500);
-                        } else {
-                            setStatus("No transmissions found. Please try again.");
-                            // Stop static
-                            if (gainNode) {
-                                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-                            }
+                        }, targetYear);
+                    } else {
+                        setStatus("No transmissions found. Please try again.");
+                        // Stop static
+                        if (gainNode) {
+                            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
                         }
-                    });
+                    }
                 } catch (err) {
                     console.error("News fetch error:", err);
                     setStatus(`Error: ${String(err.message || err)}.`);
@@ -382,7 +446,7 @@ function Home() {
                         children: "Time Glitch Radio"
                     }, void 0, false, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 421,
+                        lineNumber: 494,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("meta", {
@@ -390,7 +454,7 @@ function Home() {
                         content: "width=device-width, initial-scale=1.0"
                     }, void 0, false, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 422,
+                        lineNumber: 495,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("link", {
@@ -398,13 +462,13 @@ function Home() {
                         href: "/style.css"
                     }, void 0, false, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 423,
+                        lineNumber: 496,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/pages/index.js",
-                lineNumber: 420,
+                lineNumber: 493,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -414,14 +478,14 @@ function Home() {
                         children: "📻 Time Glitch Radio"
                     }, void 0, false, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 427,
+                        lineNumber: 500,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
                         children: "Scanning for historical radio transmissions..."
                     }, void 0, false, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 428,
+                        lineNumber: 501,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -435,7 +499,7 @@ function Home() {
                                         children: "Searching frequencies..."
                                     }, void 0, false, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 432,
+                                        lineNumber: 505,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -451,177 +515,231 @@ function Home() {
                                                                 className: "major"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 436,
+                                                                lineNumber: 509,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 437,
+                                                                lineNumber: 510,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 438,
+                                                                lineNumber: 511,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 439,
+                                                                lineNumber: 512,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 513,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                                 className: "major"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 440,
+                                                                lineNumber: 514,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 441,
+                                                                lineNumber: 515,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 442,
+                                                                lineNumber: 516,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 443,
+                                                                lineNumber: 517,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 518,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                                 className: "major"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 444,
+                                                                lineNumber: 519,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 445,
+                                                                lineNumber: 520,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 446,
+                                                                lineNumber: 521,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 447,
+                                                                lineNumber: 522,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 523,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                                 className: "major"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 448,
+                                                                lineNumber: 524,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 449,
+                                                                lineNumber: 525,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 450,
+                                                                lineNumber: 526,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 451,
+                                                                lineNumber: 527,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 528,
                                                                 columnNumber: 19
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                                 className: "major"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/pages/index.js",
-                                                                lineNumber: 452,
+                                                                lineNumber: 529,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 530,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 531,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 532,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {}, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 533,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
+                                                                className: "major"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/pages/index.js",
+                                                                lineNumber: 534,
                                                                 columnNumber: 19
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 435,
+                                                        lineNumber: 508,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                         className: "needle"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 454,
+                                                        lineNumber: 536,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                         className: "tuning-indicator"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 455,
+                                                        lineNumber: 537,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 434,
+                                                lineNumber: 507,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                 className: "meter-labels",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
-                                                        children: "1940"
+                                                        children: "1895"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 458,
+                                                        lineNumber: 540,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
-                                                        children: "1960"
+                                                        children: "1910"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 459,
+                                                        lineNumber: 541,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
-                                                        children: "1980"
+                                                        children: "1930"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 460,
+                                                        lineNumber: 542,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
-                                                        children: "2000"
+                                                        children: "1950"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 461,
+                                                        lineNumber: 543,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
-                                                        children: "2020"
+                                                        children: "1970"
                                                     }, void 0, false, {
                                                         fileName: "[project]/pages/index.js",
-                                                        lineNumber: 462,
+                                                        lineNumber: 544,
+                                                        columnNumber: 17
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
+                                                        children: "1999"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/pages/index.js",
+                                                        lineNumber: 545,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 457,
+                                                lineNumber: 539,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 433,
+                                        lineNumber: 506,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/pages/index.js",
-                                lineNumber: 431,
+                                lineNumber: 504,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -638,7 +756,7 @@ function Home() {
                                                 children: "July 4, 1976"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 469,
+                                                lineNumber: 552,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("span", {
@@ -646,13 +764,13 @@ function Home() {
                                                 children: "14:32 GMT"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 470,
+                                                lineNumber: 553,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 468,
+                                        lineNumber: 551,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -664,52 +782,52 @@ function Home() {
                                                     className: "bar"
                                                 }, void 0, false, {
                                                     fileName: "[project]/pages/index.js",
-                                                    lineNumber: 474,
+                                                    lineNumber: 557,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                     className: "bar"
                                                 }, void 0, false, {
                                                     fileName: "[project]/pages/index.js",
-                                                    lineNumber: 475,
+                                                    lineNumber: 558,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                     className: "bar"
                                                 }, void 0, false, {
                                                     fileName: "[project]/pages/index.js",
-                                                    lineNumber: 476,
+                                                    lineNumber: 559,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                     className: "bar"
                                                 }, void 0, false, {
                                                     fileName: "[project]/pages/index.js",
-                                                    lineNumber: 477,
+                                                    lineNumber: 560,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
                                                     className: "bar"
                                                 }, void 0, false, {
                                                     fileName: "[project]/pages/index.js",
-                                                    lineNumber: 478,
+                                                    lineNumber: 561,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/pages/index.js",
-                                            lineNumber: 473,
+                                            lineNumber: 556,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 472,
+                                        lineNumber: 555,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/pages/index.js",
-                                lineNumber: 467,
+                                lineNumber: 550,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -720,12 +838,12 @@ function Home() {
                                     children: "📡 Scan Frequencies"
                                 }, void 0, false, {
                                     fileName: "[project]/pages/index.js",
-                                    lineNumber: 484,
+                                    lineNumber: 567,
                                     columnNumber: 13
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/pages/index.js",
-                                lineNumber: 483,
+                                lineNumber: 566,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -733,7 +851,7 @@ function Home() {
                                 className: "status"
                             }, void 0, false, {
                                 fileName: "[project]/pages/index.js",
-                                lineNumber: 487,
+                                lineNumber: 570,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -746,7 +864,7 @@ function Home() {
                                         children: "Now Playing"
                                     }, void 0, false, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 491,
+                                        lineNumber: 574,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -756,20 +874,20 @@ function Home() {
                                                 id: "article-title"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 493,
+                                                lineNumber: 576,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("p", {
                                                 id: "article-source"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 494,
+                                                lineNumber: 577,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 492,
+                                        lineNumber: 575,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("div", {
@@ -781,7 +899,7 @@ function Home() {
                                                 children: "⏸️"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 497,
+                                                lineNumber: 580,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$externals$5d2f$react$2f$jsx$2d$dev$2d$runtime__$5b$external$5d$__$28$react$2f$jsx$2d$dev$2d$runtime$2c$__cjs$29$__["jsxDEV"])("button", {
@@ -790,31 +908,31 @@ function Home() {
                                                 children: "⏹️"
                                             }, void 0, false, {
                                                 fileName: "[project]/pages/index.js",
-                                                lineNumber: 498,
+                                                lineNumber: 581,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/pages/index.js",
-                                        lineNumber: 496,
+                                        lineNumber: 579,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/pages/index.js",
-                                lineNumber: 490,
+                                lineNumber: 573,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/pages/index.js",
-                        lineNumber: 430,
+                        lineNumber: 503,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/pages/index.js",
-                lineNumber: 426,
+                lineNumber: 499,
                 columnNumber: 7
             }, this)
         ]
